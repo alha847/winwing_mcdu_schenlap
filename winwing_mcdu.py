@@ -490,10 +490,16 @@ def create_button_list_mcdu():
     buttonlist.append(Button(75, "Backlight", "ckpt/fped/lights/mainPedLeft/anim", DrefType.DATA, ButtonType.NONE, Leds.BACKLIGHT))
 
 
-def RequestDataRefs(xp):
+def dataref_switch_mcdu(dataref, config):
+    if config & DEVICEMASK.FO:
+        return dataref.replace('AirbusFBW/MCDU1', 'AirbusFBW/MCDU2')
+    return dataref
+
+
+def RequestDataRefs(xp, config):
     dataref_cnt = 0
     for idx,b in enumerate(buttonlist):
-        datacache[b.dataref] = None
+        datacache[dataref_switch_mcdu(b.dataref, config)] = None
         if b.dreftype != DrefType.CMD and b.led != None:
             print(f"register dataref {b.dataref}")
             xp.AddDataRef(b.dataref, 3)
@@ -504,7 +510,7 @@ def RequestDataRefs(xp):
             freq = d[1]
             if freq == None:
                 freq = 2
-            xp.AddDataRef(d[0]+'['+str(i)+']', freq)
+            xp.AddDataRef(dataref_switch_mcdu(d[0]+'['+str(i)+']', config), freq)
             dataref_cnt += 1
             if dataref_cnt % 100 == 0:
                 print(".", end='', flush=True)
@@ -515,7 +521,7 @@ def RequestDataRefs(xp):
         freq = d[1]
         if freq == None:
             freq = 2
-        xp.AddDataRef(d[0], freq)
+        xp.AddDataRef(dataref_switch_mcdu(d[0], config), freq)
         dataref_cnt += 1
     print(f"registered {dataref_cnt} datarefs")
 
@@ -527,12 +533,17 @@ def xor_bitmask(a, b, bitmask):
 def mcdu_button_event():
     #print(f'events: press: {buttons_press_event}, release: {buttons_release_event}')
     for b in buttonlist:
+
         if not any(buttons_press_event) and not any(buttons_release_event):
             break
         if b.id == None:
             continue
         if buttons_press_event[b.id]:
             buttons_press_event[b.id] = 0
+
+            if device_config & DEVICEMASK.FO:
+                b.dataref = b.dataref.replace('AirbusFBW/MCDU1', 'AirbusFBW/MCDU2')
+
             #print(f'button {b.label} pressed')
             if b.type == ButtonType.TOGGLE:
                 val = datacache[b.dataref]
@@ -675,6 +686,10 @@ def set_datacache(usb_mgr, display_mgr, values):
             font_small = 0 # normal
         if ('title' in v and not 'stitle' in v) or 'spa' in v:
             font_small = 0 # normal
+
+        if usb_mgr.device_config & DEVICEMASK.FO:
+            v = v.replace('MCDU2', 'MCDU1')
+
         #print(f"page: v:{v} val:{val},'{chr(val)}', col:{color}")
         if val == 0x20 or (val == 0 and not 'MCDU1spw' in v and not 'MCDU1spa' in v):
             continue
@@ -847,6 +862,7 @@ def kb_wait_quit_event():
 class UsbManager:
     def __init__(self):
         self.device = None
+        self.device_config = 0
 
     def connect_device(self, vid: int, pid: int):
 
@@ -879,8 +895,8 @@ class UsbManager:
             for dev in hid.enumerate():
                 if dev['vendor_id'] == d['vid'] and dev['product_id'] == d['pid']:
                     print("found")
-                    device_config |= d['mask']
-                    return d['vid'], d['pid'], device_config
+                    self.device_config |= d['mask']
+                    return d['vid'], d['pid'], self.device_config
             print("not found")
         return None, None, 0
 
@@ -927,7 +943,7 @@ def main():
                 print(f"X-Plane connected")
                 display_mgr.write_line_to_page(8, 1, 'registering datarefs', 'G')
                 display_mgr.set_from_page()
-                RequestDataRefs(xp)
+                RequestDataRefs(xp, device_config)
                 xp.AddDataRef("sim/aircraft/view/acf_tailnum", 0)
                 winwing_mcdu_set_leds(usb_mgr.device, Leds.FAIL, 0)
                 xplane_connected = True
