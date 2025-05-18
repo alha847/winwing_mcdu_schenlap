@@ -722,6 +722,9 @@ def set_datacache(usb_mgr, display_mgr, values):
             if chr(val) == '4':
                 val = 60 # '<', should be a small orange arrow in cont
                 color = 'a'
+            if chr(val) == '5':
+                val = 62 # '>'
+                color = 'a'
             if chr(val) == 'E':
                 val = 35 # '#', should be an orange box
                 color = 'a'
