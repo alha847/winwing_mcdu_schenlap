@@ -656,10 +656,11 @@ def set_datacache(usb_mgr, display_mgr, values):
     global datacache
     global page
     new = False
-    spw_line_ended = False
-    spa_line_ended = False
+
     vertslew_key = None
     page_tmp = [[' ' for i in range(0, PAGE_BYTES_PER_LINE)] for j in range(0, PAGE_LINES)]
+    spw_line = [0] * PAGE_BYTES_PER_LINE
+    spa_line = [0] * PAGE_BYTES_PER_LINE
     for v in values:
         pos = 0
         val = int(values[v])
@@ -691,7 +692,7 @@ def set_datacache(usb_mgr, display_mgr, values):
             v = v.replace('MCDU2', 'MCDU1')
 
         #print(f"page: v:{v} val:{val},'{chr(val)}', col:{color}")
-        if val == 0x20 or (val == 0 and not 'MCDU1spw' in v and not 'MCDU1spa' in v):
+        if val == 0x0 or (val == 0x20 and not 'MCDU1spw' in v and not 'MCDU1spa' in v):
             continue
         if color == 's':
             if chr(val) == 'A':
@@ -735,39 +736,18 @@ def set_datacache(usb_mgr, display_mgr, values):
             data_valid = True
         spw_spa_data = False
         if "MCDU1spw" in v: # and color == 'w':
-            line = 13
             pos = int(v.split('[')[1].split(']')[0])
-            if pos == 0:
-                spw_line_ended = False # not clear why this is necessary becaus it should be False anyway
-            #print(f"spw: pos:{pos},val:{val},line:{page_tmp[line][2::3]},end={spw_line_ended}")
-            if val == 0:
-                spw_line_ended = True
-            if spw_line_ended:
-                val = 0x20
-            old_data = page_tmp[line][pos * PAGE_BYTES_PER_CHAR + PAGE_BYTES_PER_CHAR - 1]
-            if old_data != 0x20 and old_data != ' ': # already text from spw
-                #print(f"spw: already data: {(page_tmp[line][pos])} in line:{line}, pos:{pos}")
-                continue
-            data_valid = True
-            spw_spa_data = True
+
+            spw_line[pos] = val
+            continue
+
         if "MCDU1spa" in v: # and color == 'w':
-            line = 13
             pos = int(v.split('[')[1].split(']')[0])
             if pos > 21: # prevent amber color on vert slew keys
                 continue
-            if pos == 0:
-                spa_line_ended = False # not clear why this is necessary becaus it should be False anyway
-            #print(f"spa: pos:{pos},val:{val},line:{page_tmp[line][2::3]},end={spa_line_ended}")
-            if val == 0:
-                spa_line_ended = True
-            if spa_line_ended:
-                val = 0x20
-            old_data = page_tmp[line][pos * PAGE_BYTES_PER_CHAR + PAGE_BYTES_PER_CHAR - 1]
-            if old_data != 0x20 and old_data != ' ': # already text from spw
-                #print(f"spa: already data: {(page_tmp[line][pos])} in line:{line}, pos:{pos}")
-                continue
-            data_valid = True
-            spw_spa_data = True
+            spa_line[pos] = val
+            continue
+ 
         if not spw_spa_data:
             if color == 's':
                 color = None
@@ -787,6 +767,31 @@ def set_datacache(usb_mgr, display_mgr, values):
                     newline[pos + 1] = font_small
                 newline[pos + PAGE_BYTES_PER_CHAR - 1] = chr(val)
                 page_tmp[line] = newline
+    
+    #workaround for buggy spa / spw data
+    for i in range(PAGE_CHARS_PER_LINE):
+        if spw_line[i] == 0:
+            spw_line[i:] = [0] * len(spw_line[i:]) # remove all data after first 0
+            break
+    for i in range(PAGE_CHARS_PER_LINE):
+        if spa_line[i] == 0:
+            spa_line[i:] = [0] * len(spa_line[i:]) # remove all data after first 0
+            break
+    # combine spw and spa data
+    #print(f"spw after: {spw_line}, spa: {spa_line}")
+    for i in range(PAGE_CHARS_PER_LINE):
+        if spw_line[i] != 0 and spa_line[i] == 0:
+            page_tmp[13][i * PAGE_BYTES_PER_CHAR ] = str('w')
+            page_tmp[13][i * PAGE_BYTES_PER_CHAR + 1] = 0
+            page_tmp[13][i * PAGE_BYTES_PER_CHAR + PAGE_BYTES_PER_CHAR - 1] = chr(spw_line[i])
+        elif spw_line[i] == 0 and spa_line[i] != 0:
+            page_tmp[13][i * PAGE_BYTES_PER_CHAR ] = str('a')
+            page_tmp[13][i * PAGE_BYTES_PER_CHAR + 1] = 0
+            page_tmp[13][i * PAGE_BYTES_PER_CHAR + PAGE_BYTES_PER_CHAR - 1] = chr(spa_line[i])
+        else:
+            page_tmp[13][i * PAGE_BYTES_PER_CHAR ] = str('w')
+            page_tmp[13][i * PAGE_BYTES_PER_CHAR + 1] = 0
+            page_tmp[13][i * PAGE_BYTES_PER_CHAR + PAGE_BYTES_PER_CHAR - 1] = chr(0x20)
 
     if page != page_tmp:
         new = True
