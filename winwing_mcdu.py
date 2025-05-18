@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-VERSION = "v1.4"
+VERSION = "v1.4+"
 
 # IP Address of machine running X-Plane. 
 UDP_IP = "127.0.0.1"
@@ -932,12 +932,18 @@ def main():
     global device_config
 
     new_version = None
-    latest_release = get_latest_release_github()
-    if latest_release != None and latest_release != VERSION:
-        print(f"Current version: {VERSION}")
-        print(f"New version {latest_release} available, please update winwing_mcdu.py")
-        print(f"from http://github/com/schenlap/winwing_mcdu/releases/latest\n")
-        new_version = latest_release
+
+    # Check for new version on github. If you dont't want this, remove the following lines until 'version check end'
+    if "+" in VERSION:
+        print("*** WARNING: this is a development version {VERSION}, disable online version check ***\n")
+    else:
+        latest_release = get_latest_release_github()
+        if latest_release != None and latest_release != VERSION:
+            print(f"Current version: {VERSION}")
+            print(f"New version {latest_release} available, please update winwing_mcdu.py")
+            print(f"from http://github/com/schenlap/winwing_mcdu/releases/latest\n")
+            new_version = latest_release
+    # version check end
 
     usb_mgr = UsbManager()
     vid, pid, device_config = usb_mgr.find_device()
