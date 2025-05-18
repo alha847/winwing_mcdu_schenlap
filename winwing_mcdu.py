@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+VERSION = "v1.4"
 
 # IP Address of machine running X-Plane. 
 UDP_IP = "127.0.0.1"
@@ -8,6 +9,7 @@ import binascii
 from dataclasses import dataclass
 from enum import Enum, IntEnum
 import os
+import requests
 import socket
 import struct
 
@@ -165,13 +167,17 @@ class DisplayManager:
         device.write(bytes([0xf0, 0x0, 0x10, 0x38, 0x1b, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x32, 0xbb, 0x0, 0x0, 0x19, 0x1, 0x0, 0x0, 0x76, 0x72, 0x19, 0x0, 0x0, 0xe, 0x0, 0x0, 0x0, 0x4, 0x0, 0x2, 0x0, 0x0, 0x0, 0x1c, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x32, 0xbb, 0x0, 0x0, 0x1a, 0x1, 0x0, 0x0, 0x76, 0x72, 0x19, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]))
         device.write(bytes([0xf0, 0x0, 0x11, 0x12, 0x2, 0x32, 0xbb, 0x0, 0x0, 0x1c, 0x1, 0x0, 0x0, 0x76, 0x72, 0x19, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]))
 
-    def startupscreen(self):
+    def startupscreen(self, new_version: str = None):
         self.clear()
         self.write_line_to_page(0, 3,  'MCDU for X-Plane', 'W')
         self.write_line_to_page(1, 3,  'for TOLISS Airbus', 'W')
         self.write_line_to_page(12, 0, 'www.github.com/schenlap', 'W', True)
         self.write_line_to_page(13, 0, '/winwing_mcdu', 'W', True)
         self.write_line_to_page(8, 1, 'waiting for X-Plane ', 'A')
+        self.write_line_to_page(3, 1, f'version {VERSION}', 'W')
+        if new_version:
+            self.write_line_to_page(4, 1, f'New version {new_version}', 'A')
+            self.write_line_to_page(5, 1, f'available', 'A')
         self.set_from_page()
 
     def _data_from_col_font(self, color: str, font_small: bool = False):
@@ -909,10 +915,29 @@ class UsbManager:
         return None, None, 0
 
 
+def get_latest_release_github():
+    url = "https://api.github.com/repos/schenlap/winwing_mcdu/releases/latest"
+    response = requests.get(url, timeout=2)
+    if response.status_code == 200:
+        data = response.json()
+        return data['name']
+    else:
+        print(f"Error fetching latest release: {response.status_code}")
+        return None
+
+
 def main():
     global xp
     global values, xplane_connected
     global device_config
+
+    new_version = None
+    latest_release = get_latest_release_github()
+    if latest_release != None and latest_release != VERSION:
+        print(f"Current version: {VERSION}")
+        print(f"New version {latest_release} available, please update winwing_mcdu.py")
+        print(f"from http://github/com/schenlap/winwing_mcdu/releases/latest\n")
+        new_version = latest_release
 
     usb_mgr = UsbManager()
     vid, pid, device_config = usb_mgr.find_device()
@@ -925,7 +950,7 @@ def main():
     print('compatible with X-Plane 11/12 and all Toliss Airbus')
 
     display_mgr = DisplayManager(usb_mgr.device)
-    display_mgr.startupscreen()
+    display_mgr.startupscreen(new_version)
 
     create_button_list_mcdu()
 
@@ -971,7 +996,7 @@ def main():
         except XPlaneUdp.XPlaneTimeout:
             print(f'X-Plane timeout, could not connect on port {xp.BeaconData["Port"]}, waiting for X-Plane')
             winwing_mcdu_set_leds(usb_mgr.device, Leds.FAIL, 1)
-            display_mgr.startupscreen()
+            display_mgr.startupscreen(new_version)
             xplane_connected = False
             sleep(2)
 
