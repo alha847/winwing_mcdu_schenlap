@@ -901,6 +901,9 @@ class UsbManager:
                 if dev['vendor_id'] == d['vid'] and dev['product_id'] == d['pid']:
                     print("found")
                     self.device_config |= d['mask']
+                    # to force F/O or CAP, uncomment the following line
+                    #self.device_config = DEVICEMASK.MCDU | DEVICEMASK.CAP
+                    #self.device_config = DEVICEMASK.MCDU | DEVICEMASK.FO
                     return d['vid'], d['pid'], self.device_config
             print("not found")
         return None, None, 0
