@@ -362,7 +362,7 @@ array_datarefs = [
     ("AirbusFBW/MCDU1scont1g", None),
     ("AirbusFBW/MCDU1scont2g", None),
     ("AirbusFBW/MCDU1scont3g", None),
-    #("AirbusFBW/MCDU1scont4g", None),
+    ("AirbusFBW/MCDU1scont4g", None),
     ("AirbusFBW/MCDU1scont5g", None),
     ("AirbusFBW/MCDU1scont6g", None),
     ("AirbusFBW/MCDU1cont1s", None),
