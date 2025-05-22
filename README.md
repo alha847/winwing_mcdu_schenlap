@@ -36,9 +36,10 @@ For Discussions use https://forums.x-plane.org/forums/topic/324814-winwing-mcdu-
 
 ## Use MCDU
 1. start X-Plane
-2. load Toliss A319
-3. start script as written above
-4. enjoy flying (and report bugs :-)  )
+2. enable incoming traffic in settings / network (at the very bottom of the page)
+3. load Toliss A319
+4. start script as written above
+5. enjoy flying (and report bugs :-)  )
 
 
 ## developer documentation
