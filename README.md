@@ -3,7 +3,7 @@ Use winwing mcdu on Linuc and Mac for X-Plane Toliss Airbus.
 
 ## Status
 The scripts fetsches all necessery data from mcdu and displays a mcdu unit in the console and prints all text on winwing mcdu. 
-It is only useable as pilot-mcdu now.
+From V1.4 on, the scripts polls for new versions from github and displays it after startup if a new version is available.
 
 For Discussions use https://forums.x-plane.org/forums/topic/324814-winwing-mcdu-on-x-plane-for-mac-studio-and-linux/
 
