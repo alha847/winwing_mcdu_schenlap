@@ -25,12 +25,13 @@ For Discussions use https://forums.x-plane.org/forums/topic/324814-winwing-mcdu-
 #### MAC-OS
 
 1. clone the repo where you want
-2. install homebrew
-3. install dependencies
+2. change into the directory `cd winwing_mcdu`
+3. install homebrew
+4. install dependencies
 `python3 -m pip install hid`
 `python3 -m pip install requests`
 5. brew install hidapi
-6. let hid find hidapi: `ln -s /opt/homebrew/lib/libhidapi.dylib /path/to/repo/winwing_mcdu/libhidapi.dylib` 
+6. let hid find hidapi: `ln -s /opt/homebrew/lib/libhidapi.dylib .`
 7. start script with sudo: `sudo python3 ./winwing_mcdu.py` when X-Plane with Toliss aircraft is loaded.
 
 
